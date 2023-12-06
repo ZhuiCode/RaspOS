@@ -3,6 +3,8 @@
  * Copyright (c) 2018-2022 Andre Richter <andre.o.richter@gmail.com>
  */
 
+PAGE_SIZE = 64K;
+PAGE_MASK = PAGE_SIZE - 1;
 __rpi_phys_dram_start_addr = 0;
 
 /* The physical address at which the the kernel binary will be loaded by the Raspberry's firmware */
@@ -41,11 +43,13 @@ SECTIONS
                                              /*   | direction   */
         __boot_core_stack_end_exclusive = .; /*   |             */
     } :segment_boot_core_stack
+	ASSERT((. & PAGE_MASK) == 0, "End of boot core stack is not page aligned")
 
     /***********************************************************************************************
     * Code + RO Data + Global Offset Table
     ***********************************************************************************************/
-    .text :
+    __code_start = .;
+	.text :
     {
         KEEP(*(.text._start))
         *(.text._start_arguments) /* Constants (or statics in Rust speak) read by _start(). */
@@ -55,6 +59,8 @@ SECTIONS
 
     .rodata : ALIGN(8) { *(.rodata*) } :segment_code
 
+	. = ALIGN(PAGE_SIZE);
+    __code_end_exclusive = .;
     /***********************************************************************************************
     * Data + BSS
     ***********************************************************************************************/
